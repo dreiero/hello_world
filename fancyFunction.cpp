@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
+#include <algorithm>
 #include "fancyFunction.h"
 
 // your task is to modify this class as needed
