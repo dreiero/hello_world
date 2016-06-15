@@ -1,13 +1,31 @@
 #include <vector>
 
+/** @file */
+
+
+/*! 
+ * \class Product
+ * \brief functor class for product calculation
+ */
 template<class T>
 struct Product
 {
+    /*!
+     * Default constructor
+     * initializing 1. (0.0 would also lead to 0.0 in any product!)
+     */
     Product() : product_(1.0) {}
+    /*!
+     * Functor function
+     * calculation continous product of input data
+     */
     void operator()( T const & val ) { product_ *= val; }
-    T product_;
+  
+    T product_; /**< data member for direct access */
 };
 
+
+// ... 
 template<class T>
 T superFancyFunction( std::vector<T> const & arguments )
 {
