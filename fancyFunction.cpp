@@ -6,6 +6,12 @@
 #include "fancyFunction.h"
 #include <typeinfo>
 
+#include <stdlib.h>
+#include <sys/io.h>
+#include <fstream>
+
+using namespace std;
+
 // your task is to modify this class as needed
 // please keep in mind to write a full documentation
 
@@ -20,17 +26,44 @@ class Database
     private:
         /// ??
     public:
-        T retrieve( std::vector<T> const & ){ throw std::out_of_range( "value not found in db!" ); }
-        void add( std::vector<T> const &, T const & ){ } 
-        void dump(){ };
-        /// ??
+        T retrieve( std::vector<T> const & vector)
+            {
+               // throw std::out_of_range( "value not found in db!" );
+               fstream f;
+               f.open("befehle.sql", ios::out|ios::trunc);
+
+               f << "USE beleg;\n";
+               for (int i=0; i < vector.size(); i++)
+               {
+               f << "SELECT * FROM datei WHERE x = " << vector[i] << ";\n";
+               }
+               f << "exit\n";
+
+               f.close();
+
+               throw std::out_of_range( "value not found in db!" );
+
+            }
+        
+        void add( std::vector<T> const &, T const & )
+            {
+            
+            
+            }
+
+        void dump()
+            {
+            
+            
+            };
 };
 
 int main( int argc, char ** argv )
 {
     // transform strings passed to executable into vector<type>
     // any un-transformable type becomes 1.0
-    auto values = transformStringsToValues<double>( argc, argv );
+
+     auto values = transformStringsToValues<double>( argc, argv );
 
 for (int i=0; i<argc; i++)
 {
