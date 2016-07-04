@@ -6,11 +6,10 @@
 #include "fancyFunction.h"
 #include <typeinfo>
 
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <sys/io.h>
 #include <fstream>
 
-using namespace std;
 
 // your task is to modify this class as needed
 // please keep in mind to write a full documentation
@@ -29,25 +28,67 @@ class Database
         T retrieve( std::vector<T> const & vector)
             {
                // throw std::out_of_range( "value not found in db!" );
-               fstream f;
-               f.open("befehle.sql", ios::out|ios::trunc);
-
-               f << "USE beleg;\n";
-               for (int i=0; i < vector.size(); i++)
+               std::fstream fout; 
+               fout.open("befehle.sql", std::fstream::out | std::fstream::trunc); // opens the file befehle.sql to write, deletes old text
+               fout << "USE beleg;\n";
+               fout << "SELECT * FROM datei WHERE";
+               
+               if (vector.size() == 2)
                {
-               f << "SELECT * FROM datei WHERE x = " << vector[i] << ";\n";
+               fout << " x = " << vector[0];
+               fout << " AND y = " << vector[1];
+               fout << ";\nexit\n";   
+               } 
+               // add else/else if/switch for n input values
+              
+               fout.close(); // closes filestream to befehle.sql
+//_______________________________________________________________________________
+               system("mysql -u root -p beleg < befehle.sql > mysql-out.txt");
+//_______________________________________________________________________________
+               std::fstream fin;
+               fin.open ("mysql-out.txt", std::fstream::in);
+               std::string str;
+               int i = 0;
+              
+               while(i<2)
+               {
+                  std::getline(fin, str);
+                  i++;
                }
-               f << "exit\n";
-
-               f.close();
-
-               throw std::out_of_range( "value not found in db!" );
-
+              
+               i=0;
+               char *ptrchange;
+               char *ptrsave = strdup(str.c_str());
+               ptrchange = strtok(ptrsave, "\t");
+              
+               while (ptrchange != NULL)
+               {
+                   ptrsave = ptrchange;
+                   ptrchange = strtok(NULL, "\t");
+                   i++;
+               }
+              
+               fin.close();
+//_______________________________________________________________________________
+               if(i==0)
+                   throw std::out_of_range( "value not found in db!");
+               else
+                  // std::string str(ptrchange);
+                   return std::stod( ptrsave );
             }
         
-        void add( std::vector<T> const &, T const & )
+        void add( std::vector<T> const & vector, T const & result)
             {
-            
+               std::fstream fout; 
+               fout.open("befehle.sql", std::fstream::out | std::fstream::trunc); // opens the file befehle.sql to write, deletes old text
+               fout << "USE beleg;\nINSERT INTO datei VALUES ('" << vector[0];
+               for (int i=1; i < vector.size(); i++)
+               {
+                   fout << "','" << vector[i];
+               }
+               fout << "','" << result;
+               fout << "');\nexit;\n";
+               fout.close();
             
             }
 
@@ -65,12 +106,12 @@ int main( int argc, char ** argv )
 
      auto values = transformStringsToValues<double>( argc, argv );
 
-for (int i=0; i<argc; i++)
-{
-    std::cout << *argv; 
-    std::cout << "\n";
-    argv ++;
-};
+//for (int i=0; i<argc; i++)
+//{
+//    std::cout << *argv; 
+//    std::cout << "\n";
+//    argv ++;
+//};
     // setup your database:
     Database<double> db;
 
