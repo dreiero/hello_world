@@ -9,11 +9,18 @@
 //#include <stdlib.h>
 #include <sys/io.h>
 #include <fstream>
-
+#include <mysql.h>
+#include <sstream>
 
 // your task is to modify this class as needed
 // please keep in mind to write a full documentation
 
+void errorfunction( MYSQL *con )
+        {
+            std::cerr << mysql_error( con );
+            mysql_close( con );
+            exit( 1 );
+        }
 
 /*!
  * \class Database
@@ -25,71 +32,90 @@ class Database
     private:
         /// ??
     public:
-        T retrieve( std::vector<T> const & vector)
+
+        MYSQL *init()
+        {
+            MYSQL *con = mysql_init( NULL );
+
+            if ( con == NULL )
             {
-               // throw std::out_of_range( "value not found in db!" );
-               std::fstream fout; 
-               fout.open("befehle.sql", std::fstream::out | std::fstream::trunc); // opens the file befehle.sql to write, deletes old text
-               fout << "USE beleg;\n";
-               fout << "SELECT * FROM datei WHERE";
-               
-               if (vector.size() == 2)
-               {
-               fout << " x = " << vector[0];
-               fout << " AND y = " << vector[1];
-               fout << ";\nexit\n";   
-               } 
-               // add else/else if/switch for n input values
+                std::cerr << mysql_error( con );
+                exit( 1 );
+            }
+
+            if ( mysql_real_connect( con, "localhost", "test", NULL, "beleg", 0, NULL, 0 ) == NULL )
+            {
+                std::cerr << mysql_error( con );
+                mysql_close( con );
+                exit( 1 );
+            }
+
+            return con;
+        }
+
+        T retrieve( std::vector<T> const & vector, MYSQL *con )
+            {
+              std::stringstream ss1;
+              ss1 << "SELECT * FROM datei WHERE x = " << vector[0];
+              ss1 << " And y = ";
+              ss1 << vector[1];
+              std::string str = ss1.str(); 
+
+              const char * charsql = str.c_str();
+
+              if ( mysql_query( con, charsql ) )
+              {
+                  errorfunction( con );
+              }
+
+              MYSQL_RES *result = mysql_store_result( con );
+
+              if ( result == NULL )
+              {
+                  errorfunction( con );
+              }
+
+              int num_fields = mysql_num_fields( result );
+
+              MYSQL_ROW row;
               
-               fout.close(); // closes filestream to befehle.sql
-//_______________________________________________________________________________
-               system("mysql -u root -p beleg < befehle.sql > mysql-out.txt");
-//_______________________________________________________________________________
-               std::fstream fin;
-               fin.open ("mysql-out.txt", std::fstream::in);
-               std::string str;
-               int i = 0;
+              int i = 0;
+
+              std::stringstream ss2;
+
+              while( ( row = mysql_fetch_row( result ) ) )
+              {
+                  for (i = 0; i<num_fields; i++)
+                  {}
+                  ss2 << row[num_fields-1];
+              }
+
+              mysql_free_result(result);
               
-               while(i<2)
-               {
-                  std::getline(fin, str);
-                  i++;
-               }
-              
-               i=0;
-               char *ptrchange;
-               char *ptrsave = strdup(str.c_str());
-               ptrchange = strtok(ptrsave, "\t");
-              
-               while (ptrchange != NULL)
-               {
-                   ptrsave = ptrchange;
-                   ptrchange = strtok(NULL, "\t");
-                   i++;
-               }
-              
-               fin.close();
-//_______________________________________________________________________________
-               if(i==0)
-                   throw std::out_of_range( "value not found in db!");
-               else
-                  // std::string str(ptrchange);
-                   return std::stod( ptrsave );
+              if(i == 0)
+              {
+                  throw std::out_of_range( "value not found in db!" );
+              }
+              else
+              {
+                  std::string value = ss2.str();
+                  return std::stod( value );
+              }
             }
         
-        void add( std::vector<T> const & vector, T const & result)
+        void add( std::vector<T> const & vector, T const & result,  MYSQL *con )
             {
-               std::fstream fout; 
-               fout.open("befehle.sql", std::fstream::out | std::fstream::trunc); // opens the file befehle.sql to write, deletes old text
-               fout << "USE beleg;\nINSERT INTO datei VALUES ('" << vector[0];
-               for (int i=1; i < vector.size(); i++)
-               {
-                   fout << "','" << vector[i];
-               }
-               fout << "','" << result;
-               fout << "');\nexit;\n";
-               fout.close();
-            
+              std::stringstream ss1;
+              ss1 << "INSERT INTO datei VALUES( " << vector[0] << "," << vector [1] << "," << result << ")";
+              std::string str = ss1.str();
+ 
+              const char * charsql = str.c_str();
+
+              if ( mysql_query( con, charsql ) )
+              {
+                  errorfunction( con );
+              }
+
             }
 
         void dump()
@@ -106,15 +132,11 @@ int main( int argc, char ** argv )
 
      auto values = transformStringsToValues<double>( argc, argv );
 
-//for (int i=0; i<argc; i++)
-//{
-//    std::cout << *argv; 
-//    std::cout << "\n";
-//    argv ++;
-//};
     // setup your database:
     Database<double> db;
-
+    
+    MYSQL *con = db.init();
+    
     double result = 0;
     
 
@@ -123,7 +145,7 @@ int main( int argc, char ** argv )
     // else calculate result
     try
     {
-        result = db.retrieve( values );
+        result = db.retrieve( values, con );
     }
     catch( const std::out_of_range & err )
     {
@@ -131,8 +153,10 @@ int main( int argc, char ** argv )
         result = superFancyFunction( values );
 
         //save result to database
-        db.add( values, result );
+        db.add( values, result, con );
     }
+    
+    mysql_close( con );
     
     std::cout << result << std::endl;
     return 0;
