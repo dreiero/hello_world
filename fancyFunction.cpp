@@ -33,7 +33,7 @@ class Database
         /// ??
     public:
 
-        MYSQL *init()
+        MYSQL *init(int *x)
         {
             MYSQL *con = mysql_init( NULL );
 
@@ -50,15 +50,42 @@ class Database
                 exit( 1 );
             }
 
+            if ( mysql_query( con, "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'beleg' AND table_name = 'datei'" ) )
+            {
+                errorfunction( con );
+            }
+
+            MYSQL_RES *result = mysql_store_result( con );
+            if ( result == NULL )
+            {
+                errorfunction( con );
+            }
+            int num_fields = mysql_num_fields( result );
+            
+            MYSQL_ROW row;
+           
+            while( ( row = mysql_fetch_row( result ) ) )
+              {
+                   *x = atof(row[num_fields-1]);
+              }
+            mysql_free_result(result);
             return con;
         }
 
-        T retrieve( std::vector<T> const & vector, MYSQL *con )
+        T retrieve( std::vector<T> const & vector, MYSQL *con, int length )
             {
               std::stringstream ss1;
-              ss1 << "SELECT * FROM datei WHERE x = " << vector[0];
-              ss1 << " And y = ";
-              ss1 << vector[1];
+              int i = 0;
+              ss1 << "SELECT * FROM datei WHERE " << "x0" << " = " << vector[0];
+              
+              for ( i = 1; i < vector.size(); i++ )
+              {
+                  ss1 << " AND " << "x" << i << " = " << vector[i];
+              }
+              for ( i = vector.size(); i < length-1; i++ )
+              {
+                  ss1 << " AND " << "x" << i << " = 1";
+              }
               std::string str = ss1.str(); 
 
               const char * charsql = str.c_str();
@@ -79,25 +106,23 @@ class Database
 
               MYSQL_ROW row;
               
-              int i = 0;
-
               std::stringstream ss2;
-
+              i=0;
               while( ( row = mysql_fetch_row( result ) ) )
               {
-                  for (i = 0; i<num_fields; i++)
+                  for (i = 0; i < num_fields; i++)
                   {}
                   ss2 << row[num_fields-1];
               }
 
-              mysql_free_result(result);
-              
-              if(i == 0)
+              if( i == 0 )
               {
+                  mysql_free_result(result);
                   throw std::out_of_range( "value not found in db!" );
               }
               else
               {
+                   mysql_free_result(result);
                   std::string value = ss2.str();
                   return std::stod( value );
               }
@@ -106,7 +131,13 @@ class Database
         void add( std::vector<T> const & vector, T const & result,  MYSQL *con )
             {
               std::stringstream ss1;
-              ss1 << "INSERT INTO datei VALUES( " << vector[0] << "," << vector [1] << "," << result << ")";
+              int i = 0;
+              ss1 << "INSERT INTO datei VALUES(" << vector[0];
+              for (i = 1; i < vector.size(); i++)
+              {
+                  ss1 << ", " << vector[i];
+              }
+              ss1 << ", " << result << ")";
               std::string str = ss1.str();
  
               const char * charsql = str.c_str();
@@ -134,18 +165,38 @@ int main( int argc, char ** argv )
 
     // setup your database:
     Database<double> db;
-    
-    MYSQL *con = db.init();
-    
+   
+    int *lengthtabel, length;
     double result = 0;
-    
+    lengthtabel = & length;
+    MYSQL *con = db.init( lengthtabel );
+    std::stringstream ssmain;
+   
+    if ( values.size() < 1 )
+    {
+        std::cout << "not enough arguments!\n";
+        return 1;
+    }
+    else if (length-1 < values.size())
+    {
+        for ( int i = 0; i <= values.size()-length; i++)
+        {
+            ssmain << "ALTER TABLE datei ADD x" << (length-1+i) << " DOUBLE DEFAULT 1 AFTER x" << (length-2+i) << ";"; 
+        } 
+        std::string str = ssmain.str();
+        const char * charsql = str.c_str();
+        if ( mysql_query( con, charsql ) )
+        {
+            errorfunction( con );
+        }
+    }
 
     // check if arguments already in database
     // if yes return result from database
     // else calculate result
     try
     {
-        result = db.retrieve( values, con );
+        result = db.retrieve( values, con, length );
     }
     catch( const std::out_of_range & err )
     {
