@@ -128,7 +128,7 @@ class Database
               }
             }
         
-        void add( std::vector<T> const & vector, T const & result,  MYSQL *con )
+        void add( std::vector<T> const & vector, T const & result,  MYSQL *con, int length )
             {
               std::stringstream ss1;
               int i = 0;
@@ -137,6 +137,12 @@ class Database
               {
                   ss1 << ", " << vector[i];
               }
+
+              for (i = vector.size(); i < length-1; i++)
+              {
+                  ss1 << ", 1";
+              }
+
               ss1 << ", " << result << ")";
               std::string str = ss1.str();
  
@@ -204,7 +210,7 @@ int main( int argc, char ** argv )
         result = superFancyFunction( values );
 
         //save result to database
-        db.add( values, result, con );
+        db.add( values, result, con, length );
     }
     
     mysql_close( con );
