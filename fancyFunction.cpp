@@ -6,7 +6,6 @@
 #include "fancyFunction.h"
 #include <typeinfo>
 
-//#include <stdlib.h>
 #include <sys/io.h>
 #include <fstream>
 #include <mysql.h>
@@ -32,17 +31,21 @@ class Database
     private:
         /// ??
     public:
-
+        
+        /// \brief function that initializes the Database
         MYSQL *init(int *x)
         {
+            /// definition of database handle
             MYSQL *con = mysql_init( NULL );
 
+            /// error output, if definition fails 
             if ( con == NULL )
             {
                 std::cerr << mysql_error( con );
                 exit( 1 );
             }
 
+            /// connection to MYSQL, error output if connection fails 
             if ( mysql_real_connect( con, "localhost", "test", NULL, "beleg", 0, NULL, 0 ) == NULL )
             {
                 std::cerr << mysql_error( con );
@@ -50,42 +53,63 @@ class Database
                 exit( 1 );
             }
 
+            /// first MYSQL query; gets the number of columns in the database
             if ( mysql_query( con, "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'beleg' AND table_name = 'datei'" ) )
             {
                 errorfunction( con );
             }
 
+            /// definition of query result handle 
             MYSQL_RES *result = mysql_store_result( con );
+            
+            /// error output, if definition fails
             if ( result == NULL )
             {
                 errorfunction( con );
             }
-            int num_fields = mysql_num_fields( result );
-            
-            MYSQL_ROW row;
            
+            /// definition of columns in query result 
+            int num_fields = mysql_num_fields( result );
+           
+            /// definition of rows in query result 
+            MYSQL_ROW row;
+          
+            /// loops through all result rows, saves the value in the int-pointer x 
             while( ( row = mysql_fetch_row( result ) ) )
               {
                    *x = atof(row[num_fields-1]);
               }
+
+            /// frees the result handle
             mysql_free_result(result);
+
+            /// returns the connection handle
             return con;
         }
 
+        /// \brief function that retrieves the data from the database
         T retrieve( std::vector<T> const & vector, MYSQL *con, int length )
             {
+              /// definition of stringstream ss1 to save the MYSQL query and the counting int variable  
               std::stringstream ss1;
               int i = 0;
-              ss1 << "SELECT * FROM datei WHERE " << "x0" << " = " << vector[0];
+              double tol = 0.001;
+             
+              ss1 << "SELECT * FROM datei WHERE x0 BETWEEN " << ( vector[0] - tol ) << " AND " << ( vector[0] + tol );
               
+              /// writes every input value and the according x-position in the stream 
               for ( i = 1; i < vector.size(); i++ )
               {
-                  ss1 << " AND " << "x" << i << " = " << vector[i];
+                  ss1 << " AND " << "x" << i << " BETWEEN " << ( vector[i] - tol ) << " AND " << ( vector[i] + tol );
               }
+
+              /// writes for every column without a value a 1 in the query stream
               for ( i = vector.size(); i < length-1; i++ )
               {
                   ss1 << " AND " << "x" << i << " = 1";
               }
+
+              /// creates a string with the same content as ss1 
               std::string str = ss1.str(); 
 
               const char * charsql = str.c_str();
@@ -122,7 +146,7 @@ class Database
               }
               else
               {
-                   mysql_free_result(result);
+                  mysql_free_result(result);
                   std::string value = ss2.str();
                   return std::stod( value );
               }
@@ -155,10 +179,13 @@ class Database
 
             }
 
-        void dump()
+        void dump( MYSQL *con )
             {
-            
-            
+
+ //             if ( mysql_query( con, "SELECT * FROM datei" ) )
+  //            {
+   //               errorfunction( con );
+    //          }
             };
 };
 
@@ -212,7 +239,9 @@ int main( int argc, char ** argv )
         //save result to database
         db.add( values, result, con, length );
     }
-    
+   
+    db.dump( con );
+
     mysql_close( con );
     
     std::cout << result << std::endl;
