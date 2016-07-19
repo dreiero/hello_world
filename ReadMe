@@ -1,0 +1,52 @@
+_____________________________________________________________________________________
+
+SWP - BELEG
+Datenbankzugriff mit c++
+_____________________________________________________________________________________
+
+Installation Guide
+-------------------------------------------------------------------------------------
+1.  Install the latest version of MYSQL ( dev.mysql.com/downloads/mysql/ )
+    For further documentation visit: dev.mysql.com/doc 
+
+    (If neccessary install the latest edition of make, doxygen and g++)
+
+2.  Open the "fancyFunction.cpp" with your favorite editor.
+
+3.  There add in the main function your username ("user"), password ("pass"),
+    databasename ("database") and your tablename ("table"). 
+
+4.  Save and close.
+
+5.  In your downloaded folder enter the command: "make".
+
+6.  Now everything should be ready to use.
+_____________________________________________________________________________________
+
+Configuration
+-------------------------------------------------------------------------------------
+1.  If it is your first time using MYSQL or you want to create a new user for interacting
+    with the database, open the "config.sh" script with your favorite editor.
+ 
+2.  There add a name for your database, user, user password and list in the database.
+
+3.  Save and Close.
+
+4.  Execute the script.
+_____________________________________________________________________________________
+
+How to use
+-------------------------------------------------------------------------------------
+- To use the program enter the command "./beleg.x n1 n2 n3 n4..." where n1, n2,...
+  are the parameters you give the program.
+
+- Note that the parameters are read as double, so decimals and negative numbers are
+  no problem. Also the number of parameters is not limited, the table of the database
+  is just expanded to fit the given values. 
+_____________________________________________________________________________________
+
+Dokumentation
+-------------------------------------------------------------------------------------
+After you entered "make" there will be a folder "html". In this folder
+lies a index.html, the index page of the documentation.
+_____________________________________________________________________________________

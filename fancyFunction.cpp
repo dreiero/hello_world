@@ -42,10 +42,25 @@ class Database
         
         /** \brief function that initializes the Database
          * @param[in] *x number of columns in the table
+         * @param[in] user username
+         * @param[in] pass password
+         * @param[in] database databasename
+         * @param[in] table tablename
          * @return con: MYSQL connection handle
          */
-        MYSQL *init(int *x)
+        MYSQL *init(int *x, const char * user, const char * pass, const char * database, const char * table)
         {
+            // definition of stringstream ss1 to save the MYSQL query 
+            std::stringstream ss1;
+            
+            ss1 << "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = '" << database <<"' AND table_name = '" << table << "'";
+
+            // creates a string with the same content as ss1, neccesary to convert stringstream to char 
+            std::string str = ss1.str(); 
+              
+            // char with same content as string str
+            const char * charsql = str.c_str();
+
             // definition of database handle
             MYSQL *con = mysql_init( NULL );
 
@@ -57,7 +72,7 @@ class Database
             }
 
             // connection to MYSQL, error output if connection fails 
-            if ( mysql_real_connect( con, "localhost", "test", NULL, "beleg", 0, NULL, 0 ) == NULL )
+            if ( mysql_real_connect( con, "localhost", user, pass, database, 0, NULL, 0 ) == NULL )
             {
                 std::cerr << mysql_error( con );
                 mysql_close( con );
@@ -65,7 +80,7 @@ class Database
             }
 
             // first MYSQL query; gets the number of columns in the database
-            if ( mysql_query( con, "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'beleg' AND table_name = 'datei'" ) )
+            if ( mysql_query( con, charsql ) )
             {
                 errorfunction( con );
             }
@@ -102,17 +117,18 @@ class Database
          * @param[in] vector vector of double values, user input
          * @param[in] con MYSQL connection handle 
          * @param[in] length number of columns in the table
+         * @param[in] table tablename
          * @return value: saved T value (from database)
          */
-        T retrieve( std::vector<T> const & vector, MYSQL *con, int length )
+        T retrieve( std::vector<T> const & vector, MYSQL *con, int length, const char *table )
             {
-              // definition of stringstream ss1 to save the MYSQL query the counting int variable and a tolerance  const double 
+              // definition of stringstream ss1 to save the MYSQL query, the counting int variable and a tolerance  const double 
               std::stringstream ss1;
               int i = 0;
               const double tol = 0.001;
 
               //writes first input value in stringstream 
-              ss1 << "SELECT * FROM datei WHERE x0 BETWEEN " << ( vector[0] - tol ) << " AND " << ( vector[0] + tol );
+              ss1 << "SELECT * FROM " << table << " WHERE x0 BETWEEN " << ( vector[0] - tol ) << " AND " << ( vector[0] + tol );
               
               // writes every input value and the according x-position in the stream 
               for ( i = 1; i < vector.size(); i++ )
@@ -187,16 +203,17 @@ class Database
         * @param[in] vector vector of double values, user input
         * @param[in] result calculated value, from fancyFunction
         * @param[in] con MYSQL connection handle 
-        * @param[in] lenght number of columns in the table
+        * @param[in] length number of columns in the table
+        * @param[in] table tablename
         */
-        void add( std::vector<T> const & vector, T const & result,  MYSQL *con, int length )
+        void add( std::vector<T> const & vector, T const & result,  MYSQL *con, int length, const char *table )
             {
               // definition of stringstream ss1 to save the MYSQL query and the counting int variable 
               std::stringstream ss1;
               int i = 0;
 
               // writes MYSQL query plus first input value in stringstream
-              ss1 << "INSERT INTO datei VALUES(" << vector[0];
+              ss1 << "INSERT INTO " << table << " VALUES(" << vector[0];
 
               // writes every remaining input value in stream
               for (i = 1; i < vector.size(); i++)
@@ -228,17 +245,29 @@ class Database
             }
       /** \brief function that creates a .txt file for plotting
        * @param[in] con MYSQL connection handle
+       * @param[in] table tablename
        */
-        void dump( MYSQL *con )
+        void dump( MYSQL *con, const char * table )
             {
               // definition of filestream f
               std::fstream f;
+
+              // definition of stringstream ss1 to save the MYSQL query
+              std::stringstream ss1;
+
+              ss1 << "SELECT * FROM " << table;
+
+              // creates a string with the same content as ss1, neccesary to convert stringstream to char 
+              std::string str = ss1.str();
+ 
+              // char with same content as string str
+              const char * charsql = str.c_str();
 
               // open .txt file to write from filestream
               f.open ( "plot-daten.txt", std::fstream::out );
               
               // fourth MYSQL query, selects whole table
-              if ( mysql_query( con, "SELECT * FROM datei" ) )
+              if ( mysql_query( con, charsql ) )
               {
                   errorfunction( con );
               }
@@ -276,8 +305,22 @@ class Database
             };
 };
 
+/*!
+ * \brief main function
+ * calls other functions, appends table if necessary  
+ * @param[in] argc number of user given parameters
+ * @param[in] **argv array of strings containing user given parameters 
+ */
 int main( int argc, char ** argv )
 {
+    const char * user = "";         // add your username
+
+    const char * pass = "";           // add your password
+
+    const char * database = "";    // add your databasename
+
+    const char * table = "";       // add your tablename
+
     // transform strings passed to executable into vector<type>
     // any un-transformable type becomes 1.0
     auto values = transformStringsToValues<double>( argc, argv );
@@ -295,7 +338,7 @@ int main( int argc, char ** argv )
     lengthtable = & length;
 
     // the MYSQL connection handle is retrieved from the init function
-    MYSQL *con = db.init( lengthtable );
+    MYSQL *con = db.init( lengthtable, user, pass, database, table );
 
     // definition of main stringstream
     std::stringstream ssmain;
@@ -312,7 +355,7 @@ int main( int argc, char ** argv )
     {
         for ( int i = 0; i <= values.size()-length; i++)
         {
-            ssmain << "ALTER TABLE datei ADD x" << (length-1+i) << " DOUBLE DEFAULT 1 AFTER x" << (length-2+i) << ";"; 
+            ssmain << "ALTER TABLE " << table << " ADD x" << (length-1+i) << " DOUBLE DEFAULT 1 AFTER x" << (length-2+i) << ";"; 
         } 
         std::string str = ssmain.str();
         const char * charsql = str.c_str();
@@ -327,7 +370,7 @@ int main( int argc, char ** argv )
     // else calculate result
     try
     {
-        result = db.retrieve( values, con, length );
+        result = db.retrieve( values, con, length, table );
     }
     catch( const std::out_of_range & err )
     {
@@ -335,11 +378,11 @@ int main( int argc, char ** argv )
         result = superFancyFunction( values );
 
         //save result to database
-        db.add( values, result, con, length );
+        db.add( values, result, con, length, table );
     }
   
     // the dump function is called to create a plottable .txt file
-    db.dump( con );
+    db.dump( con, table );
 
     // the connection to MYSQL is closed
     mysql_close( con );
