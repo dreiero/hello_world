@@ -364,7 +364,6 @@ int main( int argc, char ** argv )
             errorfunction( con );
         }
     }
-
     // check if arguments already in database
     // if yes return result from database
     // else calculate result

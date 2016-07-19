@@ -33,7 +33,6 @@ T superFancyFunction( std::vector<T> const & arguments )
     return product.product_; 
 }
 
-
 inline void doTransformation( std::vector<std::string> const & arguments, std::vector<double> & values )
 {
     std::transform( arguments.begin(), arguments.end(), values.begin(), 
