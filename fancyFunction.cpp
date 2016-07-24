@@ -313,9 +313,9 @@ class Database
  */
 int main( int argc, char ** argv )
 {
-    const char * user = "";         // add your username
+    const char * user = "";        // add your username
 
-    const char * pass = "";           // add your password
+    const char * pass = "";        // add your password
 
     const char * database = "";    // add your databasename
 
@@ -340,9 +340,6 @@ int main( int argc, char ** argv )
     // the MYSQL connection handle is retrieved from the init function
     MYSQL *con = db.init( lengthtable, user, pass, database, table );
 
-    // definition of main stringstream
-    std::stringstream ssmain;
-  
     // in case the user gives no arguments, the programm will stop 
     if ( values.size() < 1 )
     {
@@ -355,13 +352,16 @@ int main( int argc, char ** argv )
     {
         for ( int i = 0; i <= values.size()-length; i++)
         {
+            // definition of main stringstream
+            std::stringstream ssmain;
             ssmain << "ALTER TABLE " << table << " ADD x" << (length-1+i) << " DOUBLE DEFAULT 1 AFTER x" << (length-2+i) << ";"; 
-        } 
-        std::string str = ssmain.str();
-        const char * charsql = str.c_str();
-        if ( mysql_query( con, charsql ) )
-        {
-            errorfunction( con );
+            std::string str = ssmain.str();
+            std::cout << i;
+            const char * charsql = str.c_str();
+            if ( mysql_query( con, charsql ) )
+            {
+                errorfunction( con );
+            }
         }
     }
     // check if arguments already in database

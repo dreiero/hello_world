@@ -25,14 +25,16 @@ ________________________________________________________________________________
 
 Configuration
 -------------------------------------------------------------------------------------
-1.  If it is your first time using MYSQL or you want to create a new user for interacting
-    with the database, open the "config.sh" script with your favorite editor.
+1.  If it is your first time using MYSQL or you want to create a new user for 
+    interaction with the database, open the "config.sh" script with your favorite 
+    editor.
  
 2.  There add a name for your database, user, user password and list in the database.
 
 3.  Save and Close.
 
-4.  Execute the script.
+4.  Execute the script. When asked for a password, use your root password, NOT the 
+    password you just put in for the added user.
 _____________________________________________________________________________________
 
 How to use

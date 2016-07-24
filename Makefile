@@ -10,4 +10,4 @@ $(BIN):	fancyFunction.cpp fancyFunction.h
 
 .PHONY: clean
 clean:
-	rm -rf $(BIN) html
+	rm -rf $(BIN) html plot-daten.txt
